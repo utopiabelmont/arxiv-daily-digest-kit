@@ -9,8 +9,8 @@
 
 **一句话安装** — 对你的编码代理说：
 
-- Claude Code：`安装这个自动化进程 https://github.com/utopiabelmont/arxiv-digest-kit`
-- Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-digest-kit`
+- Claude Code：`安装这个自动化进程 https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 代理会读取 `INSTALL.md` 向导：先做 3 项前置检查（发信邮箱已开两步验证 /
 gh 已登录正确账号 / Claude 路线还需确认 GitHub App 已安装），再用你的语言
@@ -38,8 +38,8 @@ and emails them to you. Runs fully in the cloud — your machine can stay off.
 
 **One-line install** — tell your coding agent:
 
-- Claude Code: `Install this automation: https://github.com/utopiabelmont/arxiv-digest-kit`
-- Codex: `Install this automation: https://github.com/utopiabelmont/arxiv-digest-kit`
+- Claude Code: `Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Codex: `Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 The agent reads `INSTALL.md`: it runs 3 pre-checks (two-step verification on
 your sending mailbox / `gh` logged into the right account / for the Claude
@@ -71,8 +71,8 @@ Prerequisites: a GitHub account + git; any SMTP-capable sending mailbox
 
 **ワンライン・インストール** — コーディングエージェントに次のように伝えてください：
 
-- Claude Code：`このオートメーションをインストールして https://github.com/utopiabelmont/arxiv-digest-kit`
-- Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-digest-kit`
+- Claude Code：`このオートメーションをインストールして https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 エージェントは `INSTALL.md` を読み、まず 3 つの事前チェック（送信メールの
 2 段階認証 / gh の正しいアカウントへのログイン / Claude 経路の場合は
