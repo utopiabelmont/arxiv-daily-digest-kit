@@ -20,6 +20,11 @@ jobs:
       - name: Fetch news
         run: {{NEWS_RUN}}
 
+      - name: Fetch YouTube videos
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: python3 fetch_youtube.py
+
       - name: Summarize with LLM
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
