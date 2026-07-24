@@ -1,8 +1,11 @@
 # arXiv Digest Kit · 每日论文简报自动化 · 論文ダイジェスト自動配信
 
 <p align="center">
-  <img src="docs/screenshot-email.png" width="46%" alt="Email digest / 邮件简报">
-  <img src="docs/screenshot-cards.png" width="46%" alt="HTML visual cards / 可视化图卡">
+  <img src="docs/screenshot-email.png" width="46%" alt="Demo email digest / 演示邮件简报">
+  <img src="docs/screenshot-cards.png" width="46%" alt="Demo HTML visual cards / 演示可视化图卡">
+</p>
+<p align="center">
+  <sub>Privacy-safe demo screenshots made with clearly fictional sample data · 使用明确标注的虚构数据制作，不含真实研究方向或邮箱信息</sub>
 </p>
 
 ---

@@ -110,6 +110,9 @@ automatically when secure is false and port is 587).
    Do NOT create send-digest.yml / ROUTINE_INSTRUCTIONS.md.
 5. Delete installer-only files: INSTALL.md AGENTS.md CLAUDE.md templates/
    config.example.json; Backend A also deletes summarize.py.
+   Verify that `config.example.json` is absent and that `config.json` contains
+   only the field, categories, terms, and keywords confirmed in Q2—no demo
+   topic or `Demo topic only` marker may remain.
 6. Create & push per Q8:
    `gh repo create <OWNER>/<REPO_NAME> --private|--public --source=. --push`
 

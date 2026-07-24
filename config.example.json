@@ -1,7 +1,7 @@
 {
   "language": "简体中文",
   "timezone_utc_offset": 9,
-  "field_hint": "Fourier optics, sub-micron edge localization, industrial inspection ML",
+  "field_hint": "Demo topic only: urban climate resilience and public-space design; replace during installation",
   "assistant_url_prefix": "https://claude.ai/new?q=",
   "llm": {
     "provider": "anthropic",
@@ -9,20 +9,20 @@
   },
   "arxiv": {
     "categories": [
-      "physics.optics",
-      "eess.IV",
-      "cs.CV"
+      "physics.soc-ph",
+      "cs.CY",
+      "stat.AP"
     ],
     "server_terms": [
-      "abs:\"defect detection\"",
-      "abs:\"optical inspection\"",
-      "abs:\"metrology\""
+      "abs:\"urban heat\"",
+      "abs:\"green infrastructure\"",
+      "abs:\"climate adaptation\""
     ],
     "keywords": [
-      "defect detection",
-      "optical inspection",
-      "metrology",
-      "deep learning"
+      "urban heat",
+      "green infrastructure",
+      "climate adaptation",
+      "public space"
     ],
     "window_hours": 72,
     "top_n": 12,
@@ -34,7 +34,7 @@
     "top_n": 10,
     "queries": [
       {
-        "q": "\"optical inspection\" industry",
+        "q": "\"urban climate resilience\" research",
         "hl": "en-US",
         "gl": "US",
         "ceid": "US:en"
