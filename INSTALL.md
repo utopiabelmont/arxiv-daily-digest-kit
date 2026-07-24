@@ -1,4 +1,4 @@
-# INSTALL.md — AI Setup Wizard v3 (Claude Code & Codex)
+# INSTALL.md — AI Setup Wizard v4 (Claude Code & Codex)
 
 > **Human?** Tell your coding agent: "Install this automation: <this repo URL>".
 > **Agent?** You are the installer. Follow this playbook exactly.
@@ -26,6 +26,12 @@ Backend table:
 | Summarizer | Routine session | `summarize.py` API call |
 | Machine off OK | yes | yes |
 
+Optional YouTube search additionally needs `YOUTUBE_API_KEY` in the secure
+execution environment. Backend B supports this directly through a GitHub
+Actions secret. For Backend A, enable YouTube only if the Routine environment
+can expose that secret without committing it; otherwise choose Backend B or
+leave YouTube disabled.
+
 - Installer is **Codex** → Backend **B** (Codex App Automations run on the
   user's machine; no hosted scheduler). Installer is **Claude Code** → ask
   A or B (default A).
@@ -40,7 +46,7 @@ Backend table:
   (github.com/settings/installations should list "Claude"). OAuth
   authorization alone is NOT installation — this is the #1 stuck point.
 
-## Step 1 — Interview (11 questions, one at a time)
+## Step 1 — Interview (12 questions, one at a time)
 
 1. **Language** of the digest (简体中文 / English / 日本語 / ...). Switch now.
 2. **Research field**: keyword phrases OR a public profile URL (Google
@@ -62,16 +68,23 @@ Backend table:
 7. **Industry news** yes/no (default yes); if yes, generate 4-8 Google News
    queries (mix English + user-language, correct hl/gl/ceid) and confirm;
    also ask desired news volume (default top 10 / 7-day window).
-8. **Repo name / owner / visibility**: default `arxiv-digest`, personal
+8. **YouTube research videos** yes/no (default no). This searches public
+   videos; it does not upload videos or access the user's subscriptions. If
+   yes, generate and confirm 2-4 search queries from Q2, then ask volume
+   (default top 6 / 7-day window), relevance language, and region. Explain
+   that the user needs a Google Cloud project with YouTube Data API v3 enabled
+   and an API key restricted to that API. Backend A must pass the secure-env
+   requirement above before enabling this option.
+9. **Repo name / owner / visibility**: default `arxiv-digest`, personal
    account, **private**. Check name collision (`gh repo view`) and re-ask
    if taken. Warn before creating public: digests reveal research interests.
-9. **Email subject prefix**: propose one in the user's language
+10. **Email subject prefix**: propose one in the user's language
    (e.g. 每日论文简报 / Daily paper digest / 論文デイリー), confirm.
-10. Backend A: **Routine model** — recommend the lightweight model to save
+11. Backend A: **Routine model** — recommend the lightweight model to save
     quota; user may pick a stronger one. Backend B: **LLM provider**
     (openai|anthropic) — then VERIFY a current low-cost model id from the
     provider's official docs before writing config; never guess model names.
-11. **Deep-link target** for the cards: `https://claude.ai/new?q=` or
+12. **Deep-link target** for the cards: `https://claude.ai/new?q=` or
     `https://chatgpt.com/?q=` (default = the assistant family the user
     already uses). Note: verify the prefill works during Step 5; if the
     provider changed URL params, adjust `assistant_url_prefix` in config.
@@ -96,14 +109,16 @@ automatically when secure is false and port is 587).
 2. Write `config.json` (structure = config.example.json) from the interview:
    language, timezone_utc_offset, field_hint, assistant_url_prefix, llm
    (Backend B), arxiv (categories/terms/keywords/top_n/window_hours), news,
-   email (subject_prefix/smtp_host/smtp_port).
+   youtube (enabled/queries/top_n/window_hours/language/region), and email
+   (subject_prefix/smtp_host/smtp_port).
 3. Backend A → generate `.github/workflows/send-digest.yml` from
    `templates/send-digest.template.yml` ({{SMTP_HOST}} {{SMTP_PORT}}
    {{SUBJECT_PREFIX}} {{SMTP_SECURE}}: true for port 465, false for 587/STARTTLS); generate
    `ROUTINE_INSTRUCTIONS.md` from `templates/routine_instructions.template.md`
    ({{LANGUAGE}} {{TZ_SIGN}}{{TZ_HOURS}} {{FIELD_HINT}}
    {{ASSISTANT_URL_PREFIX}}; news → splice `templates/news_blocks.md`,
-   else delete placeholders).
+   else delete placeholders; YouTube → splice `templates/youtube_blocks.md`,
+   else delete its placeholders).
 4. Backend B → generate `.github/workflows/daily-digest.yml` from
    `templates/daily-digest-cron.template.yml` ({{CRON_UTC}} {{NEWS_RUN}}
    {{SMTP_HOST}} {{SMTP_PORT}} {{SUBJECT_PREFIX}} {{SMTP_SECURE}}).
@@ -113,7 +128,7 @@ automatically when secure is false and port is 587).
    Verify that `config.example.json` is absent and that `config.json` contains
    only the field, categories, terms, and keywords confirmed in Q2—no demo
    topic or `Demo topic only` marker may remain.
-6. Create & push per Q8:
+6. Create & push per Q9:
    `gh repo create <OWNER>/<REPO_NAME> --private|--public --source=. --push`
 
 ## Step 3 — Secrets (user-executed; R2 applies)
@@ -126,7 +141,21 @@ gh secret set MAIL_TO         # recipient (Q6)
 gh secret set MAIL_PASSWORD   # app password / 授权码 (interactive)
 ```
 Backend B additionally: `gh secret set LLM_API_KEY`
+If YouTube is enabled on Backend B: `gh secret set YOUTUBE_API_KEY`
 (no gh → repo Settings → Secrets and variables → Actions; names exact.)
+If YouTube is enabled on Backend A, the user must set `YOUTUBE_API_KEY`
+through a protected environment-secret mechanism outside the repository.
+If that mechanism is unavailable, disable YouTube or use Backend B.
+
+Create the YouTube key without sharing it in chat:
+1. Google Cloud Console → create/select a project.
+2. APIs & Services → Library → enable **YouTube Data API v3**.
+3. Credentials → Create credentials → API key.
+4. Restrict the key to **YouTube Data API v3**, then enter it through
+   `gh secret set YOUTUBE_API_KEY` or the GitHub Secrets web UI.
+
+Official setup guide:
+https://developers.google.com/youtube/v3/getting-started
 
 ## Step 4 — Cloud side
 
@@ -136,9 +165,10 @@ Backend A (user-executed, give exact clicks):
    Authorized — see P3).
 2. claude.ai/code env → Network access: ask the user "Full (simple) or
    Custom (tighter)?"; Custom → allow export.arxiv.org
-   (+ news.google.com if news enabled).
+   (+ news.google.com if news enabled; + www.googleapis.com if YouTube
+   enabled).
 3. claude.ai/code/routines → New routine: the repo, Daily at the user's
-   local time, model per Q10, paste ROUTINE_INSTRUCTIONS.md.
+   local time, model per Q11, paste ROUTINE_INSTRUCTIONS.md.
 
 Backend B: nothing else — the cron workflow is live after push.
 
@@ -151,7 +181,8 @@ Backend B: repo → Actions → "Daily digest (cron)" → Run workflow → all
 steps green → same email check.
 Then verify with the user: HTML attachment opens; deep links open the chosen
 assistant WITH a readable prefilled prompt (raw %XX → see troubleshooting);
-"Terms" folds work; arXiv links work.
+"Terms" folds work; arXiv links work; if enabled, the Research videos section
+appears and every Watch link opens the intended YouTube video.
 
 ## Auto-fallbacks (R5)
 
@@ -160,8 +191,10 @@ assistant WITH a readable prefilled prompt (raw %XX → see troubleshooting);
 | `gh` missing | Web UI path: github.com/new → git remote add → push; secrets via repo Settings |
 | `gh` logged into wrong account | `gh auth login` again; re-run pre-check P1 |
 | Profile URL fetch fails / blocked | Ask for keyword phrases instead (Q2 fallback) |
-| Repo name taken | Re-ask Q8 with a suggested alternative |
+| Repo name taken | Re-ask Q9 with a suggested alternative |
 | Provider SMTP unknown | Ask user for host/port from their provider's help page |
+| YouTube key unavailable on Backend A | Switch to Backend B or disable YouTube; never commit the key |
+| YouTube API setup is blocked | Disable YouTube and finish the paper/news installation |
 
 ## Troubleshooting
 
@@ -170,6 +203,8 @@ assistant WITH a readable prefilled prompt (raw %XX → see troubleshooting);
 | `Input required and not supplied: from` | Mail secrets missing/typo → Step 3, exact names, Re-run |
 | `Invalid login` / auth failed | App password wrong/with spaces, 2FA off, or 587 provider without secure:false → regenerate / fix workflow |
 | B: "Missing env LLM_API_KEY" | Secret not set → Step 3 |
+| `Missing env YOUTUBE_API_KEY` | YouTube enabled but secret unavailable → set exact secret name or disable `youtube.enabled` |
+| YouTube HTTP 403 / quota error | Check API enabled, API restriction, and quota in Google Cloud Console; reduce query count |
 | B: "LLM output missing markers" | Retry; if persistent switch to a stronger model in config.json |
 | B: cron late / didn't fire | GitHub cron lags & queues; disabled after ~60 days repo inactivity (daily commits keep it alive) |
 | A: routine pushed but no Action run | send-digest.yml wasn't on main before the routine branch existed → put on main, rerun |
@@ -177,4 +212,4 @@ assistant WITH a readable prefilled prompt (raw %XX → see troubleshooting);
 | Digest dated yesterday / file overwritten | timezone_utc_offset wrong in config.json |
 | Second same-day run nearly empty | Cross-day dedup counts today's digest — expected |
 | Deep links show raw %XX text | Model failed URL-encoding → rerun; tighten wording |
-| A: script network errors | Routine env network access → allow export.arxiv.org / news.google.com |
+| A: script network errors | Routine env network access → allow export.arxiv.org / news.google.com / www.googleapis.com as enabled |

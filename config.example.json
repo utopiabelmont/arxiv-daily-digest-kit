@@ -41,6 +41,17 @@
       }
     ]
   },
+  "youtube": {
+    "enabled": false,
+    "window_hours": 168,
+    "top_n": 6,
+    "relevance_language": "en",
+    "region_code": "US",
+    "queries": [
+      "urban climate resilience lecture",
+      "green infrastructure research"
+    ]
+  },
   "email": {
     "subject_prefix": "每日论文简报",
     "smtp_host": "smtp.gmail.com",
