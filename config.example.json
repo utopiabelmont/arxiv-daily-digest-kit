@@ -1,6 +1,12 @@
 {
   "language": "简体中文",
   "timezone_utc_offset": 9,
+  "field_hint": "Fourier optics, sub-micron edge localization, industrial inspection ML",
+  "assistant_url_prefix": "https://claude.ai/new?q=",
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
   "arxiv": {
     "categories": ["physics.optics", "eess.IV", "cs.CV"],
     "server_terms": ["abs:\"defect detection\"", "abs:\"optical inspection\"", "abs:\"metrology\""],
