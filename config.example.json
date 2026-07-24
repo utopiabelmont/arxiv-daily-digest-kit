@@ -8,9 +8,22 @@
     "model": "claude-haiku-4-5"
   },
   "arxiv": {
-    "categories": ["physics.optics", "eess.IV", "cs.CV"],
-    "server_terms": ["abs:\"defect detection\"", "abs:\"optical inspection\"", "abs:\"metrology\""],
-    "keywords": ["defect detection", "optical inspection", "metrology", "deep learning"],
+    "categories": [
+      "physics.optics",
+      "eess.IV",
+      "cs.CV"
+    ],
+    "server_terms": [
+      "abs:\"defect detection\"",
+      "abs:\"optical inspection\"",
+      "abs:\"metrology\""
+    ],
+    "keywords": [
+      "defect detection",
+      "optical inspection",
+      "metrology",
+      "deep learning"
+    ],
     "window_hours": 72,
     "top_n": 12,
     "max_pages": 3
@@ -20,12 +33,18 @@
     "window_hours": 168,
     "top_n": 10,
     "queries": [
-      {"q": "\"optical inspection\" industry", "hl": "en-US", "gl": "US", "ceid": "US:en"}
+      {
+        "q": "\"optical inspection\" industry",
+        "hl": "en-US",
+        "gl": "US",
+        "ceid": "US:en"
+      }
     ]
   },
   "email": {
     "subject_prefix": "每日论文简报",
     "smtp_host": "smtp.gmail.com",
-    "smtp_port": 465
+    "smtp_port": 465,
+    "smtp_secure": true
   }
 }

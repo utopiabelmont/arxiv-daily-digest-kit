@@ -1,115 +1,177 @@
-# INSTALL.md — AI Setup Wizard (Claude Code & Codex)
+# INSTALL.md — AI Setup Wizard v3 (Claude Code & Codex)
 
 > **Human?** Tell your coding agent: "Install this automation: <this repo URL>".
 > **Agent?** You are the installer. Follow this playbook exactly.
-> 中文/日本語ユーザー向け：向导将以用户在问题1选择的语言交流。
+> 中文/日本語ユーザー向け：向导将以用户在 Q1 选择的语言交流。
 
 ## Rules for the agent
 
-- R1. Conduct the interview in the user's chosen language (Question 1).
-- R2. NEVER ask for passwords/API keys in chat. Users enter secrets themselves
-  via `gh secret set NAME` (interactive) or the GitHub web UI.
+- R1. Conduct the interview in the user's chosen language (Q1 onward).
+- R2. NEVER ask for passwords / API keys in chat. Users enter secrets
+  themselves via `gh secret set NAME` (interactive) or the GitHub web UI.
 - R3. Confirm derived keywords with the user before writing config.
-- R4. State prerequisites first; stop if unmet: GitHub account + git;
-  a Gmail account for sending. Backend A additionally needs Claude Pro/Max with
-  Claude Code on the web. Backend B additionally needs an LLM API key
-  (OpenAI or Anthropic) and bills a few cents/day.
+- R4. Ask ONE question at a time. Skip a question when the answer is already
+  known from context. Offer the marked defaults so users can just say "default".
+- R5. On any tool failure, use the fallback column in "Auto-fallbacks" below —
+  do not dead-end the user.
 
-## Step 0 — Pick the execution backend
+## Step 0 — Backend & pre-checks
 
-| | Backend A: Claude cloud Routine | Backend B: GitHub Actions cron |
+Backend table:
+
+| | A: Claude cloud Routine | B: GitHub Actions cron |
 |---|---|---|
-| Runs | Anthropic cloud | GitHub cloud |
-| Needs | Claude Pro/Max | LLM API key (secret `LLM_API_KEY`) |
-| Summarizer | the Routine's Claude session | `summarize.py` API call |
+| Runs on | Anthropic cloud | GitHub cloud |
+| Needs | Claude Pro/Max | LLM API key (`LLM_API_KEY`) |
+| Summarizer | Routine session | `summarize.py` API call |
 | Machine off OK | yes | yes |
 
-- Installer is **Codex** → use **Backend B** (Codex has no hosted cloud
-  scheduler equivalent to Claude Routines; its App Automations run on the
-  user's machine).
-- Installer is **Claude Code** → ask the user A or B (A default).
+- Installer is **Codex** → Backend **B** (Codex App Automations run on the
+  user's machine; no hosted scheduler). Installer is **Claude Code** → ask
+  A or B (default A).
 
-## Step 1 — Interview (both backends)
+**Pre-checks (ask/verify explicitly before the interview):**
+- P1. `git`, `python3` present; `gh` present AND `gh auth status` shows the
+  intended GitHub account (wrong account is a common failure).
+- P2. "Does your sending-email account have two-step verification enabled?"
+  (needed to create an app password / authorization code). If not, guide
+  enabling it first.
+- P3. Backend A only: "Have you installed the Claude GitHub App before?"
+  (github.com/settings/installations should list "Claude"). OAuth
+  authorization alone is NOT installation — this is the #1 stuck point.
 
-Ask one at a time:
+## Step 1 — Interview (11 questions, one at a time)
+
 1. **Language** of the digest (简体中文 / English / 日本語 / ...). Switch now.
 2. **Research field**: keyword phrases OR a public profile URL (Google
-   Scholar / KAKEN / ORCID). If URL: fetch it, derive 3-6 arXiv categories,
-   10-20 `abs:"..."` server terms, 20-40 scoring keywords; confirm (R3).
-   Also compose a one-line `field_hint`.
-3. **Push time** + UTC offset (e.g. 07:00, UTC+9).
-4. **Recipient email** (MAIL_TO).
-5. **Industry news** yes/no; if yes, generate 4-8 Google News queries
-   (mix English + user-language, correct hl/gl/ceid) and confirm.
-6. (Backend B only) **LLM provider** openai|anthropic + verify a current
-   cheap model id from the provider's official docs before writing config.
-7. Ask which assistant the deep-link cards should open:
-   `https://claude.ai/new?q=` or `https://chatgpt.com/?q=` → assistant_url_prefix.
+   Scholar / KAKEN / ORCID). If URL: fetch, derive 3-6 arXiv categories,
+   10-20 `abs:"..."` server terms, 20-40 scoring keywords; show & confirm
+   (R3). Compose a one-line `field_hint`.
+3. **Volume preference**: "Is your field narrow or broad? Roughly how many
+   papers per day do you want?" → set `top_n` (default 12) and
+   `window_hours` (narrow field → 72-96; broad → 48). Explain the tradeoff
+   in one sentence.
+4. **Push time** + UTC offset (e.g. 07:00, UTC+9) → `timezone_utc_offset`;
+   Backend B: convert to `{{CRON_UTC}}` yourself and tell the user GitHub
+   cron may lag minutes at busy times.
+5. **Sending email provider**: Gmail / Outlook / QQ邮箱 / 163 / other →
+   pick SMTP from the table below; "other" → ask for host+port or look up
+   the provider's official SMTP docs. Also ask: same account for sending
+   and receiving? 
+6. **Recipient email** (MAIL_TO; default = sending address).
+7. **Industry news** yes/no (default yes); if yes, generate 4-8 Google News
+   queries (mix English + user-language, correct hl/gl/ceid) and confirm;
+   also ask desired news volume (default top 10 / 7-day window).
+8. **Repo name / owner / visibility**: default `arxiv-digest`, personal
+   account, **private**. Check name collision (`gh repo view`) and re-ask
+   if taken. Warn before creating public: digests reveal research interests.
+9. **Email subject prefix**: propose one in the user's language
+   (e.g. 每日论文简报 / Daily paper digest / 論文デイリー), confirm.
+10. Backend A: **Routine model** — recommend the lightweight model to save
+    quota; user may pick a stronger one. Backend B: **LLM provider**
+    (openai|anthropic) — then VERIFY a current low-cost model id from the
+    provider's official docs before writing config; never guess model names.
+11. **Deep-link target** for the cards: `https://claude.ai/new?q=` or
+    `https://chatgpt.com/?q=` (default = the assistant family the user
+    already uses). Note: verify the prefill works during Step 5; if the
+    provider changed URL params, adjust `assistant_url_prefix` in config.
 
-## Step 2 — Build the user's repo (both backends)
+### SMTP provider table
 
-1. `git clone <this repo> arxiv-digest && cd arxiv-digest && rm -rf .git && git init -b main`
-2. Write `config.json` (structure = config.example.json) from the interview.
+| Provider | host | port | Credential to put in MAIL_PASSWORD |
+|---|---|---|---|
+| Gmail | smtp.gmail.com | 465 | App password (Google Account → Security → App passwords) |
+| Outlook/Hotmail | smtp-mail.outlook.com | 587 | App password (Microsoft Account → Security) |
+| QQ邮箱 | smtp.qq.com | 465 | 授权码 (设置 → 账户 → POP3/SMTP → 生成授权码) |
+| 163邮箱 | smtp.163.com | 465 | 授权码 (设置 → POP3/SMTP/IMAP → 客户端授权密码) |
+| Other | ask user / official docs | — | provider-specific app password |
+
+Note for port 587 providers (e.g. Outlook): STARTTLS — set `secure: false`
+in the generated workflow's send-mail step (dawidd6 action handles STARTTLS
+automatically when secure is false and port is 587).
+
+## Step 2 — Build the user's repo
+
+1. `git clone <this repo> <REPO_NAME> && cd <REPO_NAME> && rm -rf .git && git init -b main`
+2. Write `config.json` (structure = config.example.json) from the interview:
+   language, timezone_utc_offset, field_hint, assistant_url_prefix, llm
+   (Backend B), arxiv (categories/terms/keywords/top_n/window_hours), news,
+   email (subject_prefix/smtp_host/smtp_port).
 3. Backend A → generate `.github/workflows/send-digest.yml` from
-   `templates/send-digest.template.yml` ({{SMTP_HOST}} {{SMTP_PORT}} {{SUBJECT_PREFIX}});
-   generate `ROUTINE_INSTRUCTIONS.md` from `templates/routine_instructions.template.md`
-   ({{LANGUAGE}} {{TZ_SIGN}}{{TZ_HOURS}} {{FIELD_HINT}} {{ASSISTANT_URL_PREFIX}};
-   news → splice blocks from `templates/news_blocks.md`, else delete placeholders).
+   `templates/send-digest.template.yml` ({{SMTP_HOST}} {{SMTP_PORT}}
+   {{SUBJECT_PREFIX}} {{SMTP_SECURE}}: true for port 465, false for 587/STARTTLS); generate
+   `ROUTINE_INSTRUCTIONS.md` from `templates/routine_instructions.template.md`
+   ({{LANGUAGE}} {{TZ_SIGN}}{{TZ_HOURS}} {{FIELD_HINT}}
+   {{ASSISTANT_URL_PREFIX}}; news → splice `templates/news_blocks.md`,
+   else delete placeholders).
 4. Backend B → generate `.github/workflows/daily-digest.yml` from
-   `templates/daily-digest-cron.template.yml`:
-   - {{CRON_UTC}}: convert the user's local time to UTC yourself
-     (e.g. 07:00 UTC+9 → `0 22 * * *`). Tell the user GitHub cron can lag
-     minutes to ~an hour at busy times.
-   - {{NEWS_RUN}}: `python3 fetch_news.py` if news enabled else `"true"`.
-   - {{SMTP_HOST}} {{SMTP_PORT}} {{SUBJECT_PREFIX}} from config.
-   Do NOT create send-digest.yml or ROUTINE_INSTRUCTIONS.md for Backend B.
+   `templates/daily-digest-cron.template.yml` ({{CRON_UTC}} {{NEWS_RUN}}
+   {{SMTP_HOST}} {{SMTP_PORT}} {{SUBJECT_PREFIX}} {{SMTP_SECURE}}).
+   Do NOT create send-digest.yml / ROUTINE_INSTRUCTIONS.md.
 5. Delete installer-only files: INSTALL.md AGENTS.md CLAUDE.md templates/
-   config.example.json. Backend A also deletes summarize.py.
-6. `gh repo create arxiv-digest --private --source=. --push`
-   (no gh → guide web UI + git remote + push).
+   config.example.json; Backend A also deletes summarize.py.
+6. Create & push per Q8:
+   `gh repo create <OWNER>/<REPO_NAME> --private|--public --source=. --push`
 
 ## Step 3 — Secrets (user-executed; R2 applies)
 
-Guide Gmail app password creation (2-Step Verification → App passwords).
+Guide credential creation per the SMTP table (provider-specific path).
 User runs:
 ```
-gh secret set MAIL_USERNAME
-gh secret set MAIL_TO
-gh secret set MAIL_PASSWORD
+gh secret set MAIL_USERNAME   # sending address
+gh secret set MAIL_TO         # recipient (Q6)
+gh secret set MAIL_PASSWORD   # app password / 授权码 (interactive)
 ```
 Backend B additionally: `gh secret set LLM_API_KEY`
-(no gh → repo Settings → Secrets and variables → Actions).
+(no gh → repo Settings → Secrets and variables → Actions; names exact.)
 
 ## Step 4 — Cloud side
 
 Backend A (user-executed, give exact clicks):
-1. github.com/apps/claude → Install → grant the new repo.
-2. claude.ai/code env → Network access: Full or Custom incl. export.arxiv.org
-   (+ news.google.com if news).
-3. claude.ai/code/routines → New routine: repo, Daily at the user's local
-   time, paste ROUTINE_INSTRUCTIONS.md.
+1. github.com/apps/claude → Install (or Configure) → grant the new repo
+   (verify it now appears under **Installed** GitHub Apps, not only
+   Authorized — see P3).
+2. claude.ai/code env → Network access: ask the user "Full (simple) or
+   Custom (tighter)?"; Custom → allow export.arxiv.org
+   (+ news.google.com if news enabled).
+3. claude.ai/code/routines → New routine: the repo, Daily at the user's
+   local time, model per Q10, paste ROUTINE_INSTRUCTIONS.md.
 
-Backend B: nothing else — the cron workflow is already live after push.
+Backend B: nothing else — the cron workflow is live after push.
 
-## Step 5 — Verify
+## Step 5 — Verify (walk the user through; ask, don't wait)
 
-Backend A: Routine "Run now" → digests/ + digests_html/ pushed → push-triggered
-green "Send daily digest" Action → email with .html attachment.
-Backend B: repo → Actions → "Daily digest (cron)" → Run workflow → all steps
-green → email arrives. Check: deep links open the chosen assistant with a
-prefilled prompt; "Terms" folds work; arXiv links work.
+Backend A: Routine "Run now" → digests/ + digests_html/ pushed → green
+push-triggered "Send daily digest" Action → ask: "Did the email arrive?
+(check spam/promotions too)".
+Backend B: repo → Actions → "Daily digest (cron)" → Run workflow → all
+steps green → same email check.
+Then verify with the user: HTML attachment opens; deep links open the chosen
+assistant WITH a readable prefilled prompt (raw %XX → see troubleshooting);
+"Terms" folds work; arXiv links work.
+
+## Auto-fallbacks (R5)
+
+| Failure | Fallback |
+|---|---|
+| `gh` missing | Web UI path: github.com/new → git remote add → push; secrets via repo Settings |
+| `gh` logged into wrong account | `gh auth login` again; re-run pre-check P1 |
+| Profile URL fetch fails / blocked | Ask for keyword phrases instead (Q2 fallback) |
+| Repo name taken | Re-ask Q8 with a suggested alternative |
+| Provider SMTP unknown | Ask user for host/port from their provider's help page |
 
 ## Troubleshooting
 
 | Symptom | Cause → Fix |
 |---|---|
 | `Input required and not supplied: from` | Mail secrets missing/typo → Step 3, exact names, Re-run |
-| `Invalid login` | App password wrong/spaces or 2FA off → regenerate |
-| B: summarize step fails "Missing env LLM_API_KEY" | Secret not set → Step 3 |
-| B: "LLM output missing markers" | Retry run; if persistent, switch to a stronger model in config.json |
-| B: cron didn't fire on time | GitHub cron lags/queues; also disabled after ~60 days without repo activity (daily commits keep it alive) |
-| A: routine pushed but no Action | send-digest.yml wasn't on main before the routine branch existed → put it on main, rerun |
-| Digest dated yesterday / overwritten | timezone_utc_offset wrong in config.json |
-| Second same-day run nearly empty | cross-day dedup counts today's digest — expected |
-| Deep links show raw %XX in the box | model failed URL-encoding → rerun; tighten wording |
-| Script network errors (Backend A) | routine env network access → allow export.arxiv.org / news.google.com |
+| `Invalid login` / auth failed | App password wrong/with spaces, 2FA off, or 587 provider without secure:false → regenerate / fix workflow |
+| B: "Missing env LLM_API_KEY" | Secret not set → Step 3 |
+| B: "LLM output missing markers" | Retry; if persistent switch to a stronger model in config.json |
+| B: cron late / didn't fire | GitHub cron lags & queues; disabled after ~60 days repo inactivity (daily commits keep it alive) |
+| A: routine pushed but no Action run | send-digest.yml wasn't on main before the routine branch existed → put on main, rerun |
+| A: repo not selectable in routine | App not *installed* or repo not granted (P3) → github.com/apps/claude Configure; paste repo URL directly |
+| Digest dated yesterday / file overwritten | timezone_utc_offset wrong in config.json |
+| Second same-day run nearly empty | Cross-day dedup counts today's digest — expected |
+| Deep links show raw %XX text | Model failed URL-encoding → rerun; tighten wording |
+| A: script network errors | Routine env network access → allow export.arxiv.org / news.google.com |
