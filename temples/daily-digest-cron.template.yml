@@ -50,7 +50,7 @@ jobs:
         with:
           server_address: {{SMTP_HOST}}
           server_port: {{SMTP_PORT}}
-          secure: true
+          secure: {{SMTP_SECURE}}
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           from: ${{ secrets.MAIL_USERNAME }}
