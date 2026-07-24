@@ -1,0 +1,47 @@
+name: Send daily digest
+
+on:
+  push:
+    paths:
+      - 'digests/*.md'
+  workflow_dispatch:
+
+jobs:
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pushed ref
+        uses: actions/checkout@v4
+
+      - name: Pick the newest digest
+        id: pick
+        run: |
+          FILE=$(ls -1 digests/*.md 2>/dev/null | sort | tail -n 1)
+          if [ -z "$FILE" ]; then
+            echo "no digests/*.md found, exit."
+            exit 1
+          fi
+          DATE=$(basename "$FILE" .md)
+          HTML="digests_html/${DATE}.html"
+          if [ -f "$HTML" ]; then ATT="$FILE,$HTML"; else ATT="$FILE"; fi
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "att=$ATT" >> "$GITHUB_OUTPUT"
+          {
+            echo "BODY<<__EOF__"
+            cat "$FILE"
+            echo "__EOF__"
+          } >> "$GITHUB_ENV"
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: {{SMTP_HOST}}
+          server_port: {{SMTP_PORT}}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          to: ${{ secrets.MAIL_TO }}
+          subject: {{SUBJECT_PREFIX}} ${{ steps.pick.outputs.date }}
+          body: ${{ env.BODY }}
+          attachments: ${{ steps.pick.outputs.att }}

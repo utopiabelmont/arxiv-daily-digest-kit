@@ -1,0 +1,60 @@
+name: Daily digest (cron)
+
+on:
+  schedule:
+    - cron: '{{CRON_UTC}}'   # UTC! computed at install from the user's local push time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch papers
+        run: python3 fetch_arxiv.py
+
+      - name: Fetch news
+        run: {{NEWS_RUN}}
+
+      - name: Summarize with LLM
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: python3 summarize.py
+
+      - name: Build HTML cards
+        id: build
+        run: |
+          DATE=$(ls -1 digests/*.md | sort | tail -n 1 | xargs -n1 basename | sed 's/\.md$//')
+          python3 build_html.py cards_fragment.html "digests_html/${DATE}.html"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          {
+            echo "BODY<<__EOF__"
+            cat "digests/${DATE}.md"
+            echo "__EOF__"
+          } >> "$GITHUB_ENV"
+
+      - name: Commit results
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "digest-bot@users.noreply.github.com"
+          git add digests/ digests_html/
+          git commit -m "Daily digest ${{ steps.build.outputs.date }}" || echo "nothing to commit"
+          git push
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: {{SMTP_HOST}}
+          server_port: {{SMTP_PORT}}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          to: ${{ secrets.MAIL_TO }}
+          subject: {{SUBJECT_PREFIX}} ${{ steps.build.outputs.date }}
+          body: ${{ env.BODY }}
+          attachments: digests/${{ steps.build.outputs.date }}.md,digests_html/${{ steps.build.outputs.date }}.html
