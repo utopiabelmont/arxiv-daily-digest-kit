@@ -19,12 +19,18 @@
 
 Backend table:
 
-| | A: Claude cloud Routine | B: GitHub Actions cron |
-|---|---|---|
-| Runs on | Anthropic cloud | GitHub cloud |
-| Needs | Claude Pro/Max | LLM API key (`LLM_API_KEY`) |
-| Summarizer | Routine session | `summarize.py` API call |
-| Machine off OK | yes | yes |
+| | A: Claude cloud Routine | B: GitHub Actions cron | C: Spark-native |
+|---|---|---|---|
+| Runs on | Anthropic cloud | GitHub cloud | Google cloud (Spark VM) |
+| Needs | Claude Pro/Max | LLM API key (`LLM_API_KEY`) | Google AI Ultra |
+| Summarizer | Routine session | `summarize.py` API call | the Spark task itself |
+| Storage / dedup | your repo, exact by arXiv ID | your repo, exact by arXiv ID | Google Sheets ledger, model-driven |
+| Machine off OK | yes | yes | yes |
+
+Backend C is for assistants that cannot run a shell, git or Python — it drops
+the scripts, GitHub and SMTP entirely and is documented separately in
+[`INSTALL-SPARK.md`](INSTALL-SPARK.md). This file covers A and B only; the rest
+of it assumes you can execute commands.
 
 Optional YouTube search additionally needs `YOUTUBE_API_KEY` in the secure
 execution environment. Backend B supports this directly through a GitHub
@@ -34,7 +40,8 @@ leave YouTube disabled.
 
 - Installer is **Codex** → Backend **B** (Codex App Automations run on the
   user's machine; no hosted scheduler). Installer is **Claude Code** → ask
-  A or B (default A).
+  A or B (default A). Installer has **no shell** (e.g. Gemini Spark) → stop
+  here and follow [`INSTALL-SPARK.md`](INSTALL-SPARK.md) instead.
 
 **Pre-checks (ask/verify explicitly before the interview):**
 - P1. `git`, `python3` present; `gh` present AND `gh auth status` shows the
@@ -123,8 +130,8 @@ automatically when secure is false and port is 587).
    `templates/daily-digest-cron.template.yml` ({{CRON_UTC}} {{NEWS_RUN}}
    {{SMTP_HOST}} {{SMTP_PORT}} {{SUBJECT_PREFIX}} {{SMTP_SECURE}}).
    Do NOT create send-digest.yml / ROUTINE_INSTRUCTIONS.md.
-5. Delete installer-only files: INSTALL.md AGENTS.md CLAUDE.md templates/
-   config.example.json; Backend A also deletes summarize.py.
+5. Delete installer-only files: INSTALL.md INSTALL-SPARK.md AGENTS.md CLAUDE.md
+   templates/ config.example.json; Backend A also deletes summarize.py.
    Verify that `config.example.json` is absent and that `config.json` contains
    only the field, categories, terms, and keywords confirmed in Q2—no demo
    topic or `Demo topic only` marker may remain.

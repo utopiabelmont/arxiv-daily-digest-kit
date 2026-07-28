@@ -23,6 +23,7 @@
 
 - Claude Code：`安装这个自动化进程 https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 - Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Gemini Spark：`安装这个自动化进程 https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 代理会读取 `INSTALL.md` 向导：先做 3 项前置检查（发信邮箱已开两步验证 /
 gh 已登录正确账号 / Claude 路线还需确认 GitHub App 已安装），再用你的语言
@@ -33,21 +34,32 @@ gh 已登录正确账号 / Claude 路线还需确认 GitHub App 已安装），�
 模型/LLM 提供商、图卡深链打开哪家助手——然后自动完成全部配置。
 凡有默认值的问题都可以直接回答"默认"。
 
-**两种运行后端**（向导会帮你选）：
+没有 shell 的助手（如 Gemini Spark）改读 `INSTALL-SPARK.md`，只问 7 个问题。
+
+**三种运行后端**（向导会帮你选）：
 
 - **A · Claude 云端 Routine**：需 Claude Pro/Max，由 Routine 会话写简报；
 - **B · GitHub Actions 定时**：Codex 用户默认走这条；需一个 LLM API Key
   （OpenAI 或 Anthropic），全程跑在 GitHub 云上。
+- **C · Gemini Spark 原生**：需 Google AI Ultra；无需 GitHub、无需邮箱应用
+  专用密码、无需 API Key，去重台账用 Google Sheets、发信用原生 Gmail；
+  代价是检索与去重精度低于 A/B（由模型完成，而非脚本），且不支持 YouTube
+  研究视频。详见 `INSTALL-SPARK.md`。
 
 前提：GitHub 账号 + git；一个支持 SMTP 的发信邮箱（应用专用密码/授权码的
 生成路径向导会按服务商分别指导）。如启用 YouTube，还需要在 Google Cloud
 启用 YouTube Data API v3 并创建受限 API Key。
+**后端 C 不需要 GitHub 账户，也不需要发信邮箱密码和 API Key**，只需要一个
+可用 Spark 的 Google AI Ultra 账号。
 
 ### 隐私与数据流
 
 - 邮箱密码 / API Key 只存放在你仓库的 **GitHub 加密 Secrets** 中，写入后任何人（包括你）都无法读回明文；
 - 简报、配置与运行历史都存在**你自己的仓库**（默认私有）；不会向本套件作者传输任何数据；
 - 后端 B 会把论文标题/摘要与你的领域描述发送给**你选择的** LLM 提供商用于生成摘要；后端 A 在你自己的 Claude 账户内处理。
+- 后端 C 全程在你自己的 Google 账户内：去重台账和归档存在你的 Google Sheets /
+  Drive，简报由 Spark 用你的 Ultra 额度生成并经 Gmail 发出，不涉及任何第三方
+  凭据。
 - 启用 YouTube 时，配置的检索词会发送给 Google 的 YouTube Data API；
   `YOUTUBE_API_KEY` 仅作为受保护的运行环境 Secret 使用，不写入仓库。
 
@@ -57,6 +69,7 @@ gh 已登录正确账号 / Claude 路线还需确认 GitHub App 已安装），�
 |---|---|
 | 后端 A（Routine） | 消耗你的 Claude 订阅额度（建议选轻量模型） |
 | 后端 B（LLM API） | 约每天几美分，取决于模型与篇数 |
+| 后端 C（Spark） | 消耗你的 Google AI Ultra 订阅额度，无额外费用 |
 | GitHub Actions | 公共仓库免费；私有仓库使用每月免费分钟数（本任务每天仅数分钟） |
 | YouTube Data API（可选） | 通常无直接费用，但受 Google Cloud 项目每日配额限制 |
 
@@ -64,8 +77,10 @@ gh 已登录正确账号 / Claude 路线还需确认 GitHub App 已安装），�
 
 后端 A：在 claude.ai/code/routines 删除或停用该 routine。
 后端 B：仓库 Actions → "Daily digest (cron)" → ⋯ → Disable workflow。
+后端 C：在 Gemini 应用 Agent 标签页删除或暂停该定时任务。
 彻底卸载：另外撤销邮箱应用专用密码/授权码和 YouTube API Key，删除仓库
-Secrets，（可选）删除整个仓库。
+Secrets，（可选）删除整个仓库；后端 C 则删除台账表格并撤销该任务对
+Gmail / Sheets / Drive 的授权。
 
 ### 没有编码代理？手动安装
 
@@ -87,6 +102,7 @@ machine can stay off.
 
 - Claude Code: `Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 - Codex: `Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Gemini Spark: `Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 The agent reads `INSTALL.md`: it runs 3 pre-checks (two-step verification on
 your sending mailbox / `gh` logged into the right account / for the Claude
@@ -99,17 +115,26 @@ yes-no, repo name & visibility, subject line, model / LLM provider, and which
 assistant the card deep-links open — then configures everything. Answer
 "default" to any question that offers one.
 
-**Two execution backends** (the wizard picks with you):
+Assistants without a shell (Gemini Spark) read `INSTALL-SPARK.md` instead —
+7 questions.
+
+**Three execution backends** (the wizard picks with you):
 
 - **A · Claude cloud Routine** — needs Claude Pro/Max; the Routine session
   writes the digest.
 - **B · GitHub Actions cron** — default for Codex users; needs one LLM API
   key (OpenAI or Anthropic); everything runs on GitHub.
+- **C · Gemini Spark native** — needs Google AI Ultra; no GitHub account, no
+  mail app password, no API key. Dedup uses a Google Sheets ledger and mail
+  goes out through native Gmail; the price is that retrieval and dedup are
+  less precise than A/B (done by the model, not by the scripts), and YouTube
+  research videos are not supported. See `INSTALL-SPARK.md`.
 
 Prerequisites: a GitHub account + git; any SMTP-capable sending mailbox
 (the wizard gives provider-specific app-password / auth-code steps). Enabling
 YouTube also requires YouTube Data API v3 in Google Cloud and a restricted
-API key.
+API key. **Backend C needs none of that — no GitHub account, no mailbox
+password, no API key** — only a Google AI Ultra account with Spark.
 
 ### Privacy & data flow
 
@@ -120,6 +145,9 @@ API key.
 - Backend B sends paper titles/abstracts plus your field description to
   **the LLM provider you chose**; Backend A processes everything inside
   your own Claude account.
+- Backend C stays inside your own Google account: the dedup ledger and archive
+  live in your Google Sheets / Drive, and Spark writes the digest on your Ultra
+  quota and sends it through Gmail — no third-party credential involved.
 - When YouTube is enabled, configured search terms are sent to Google's
   YouTube Data API. `YOUTUBE_API_KEY` is used only as a protected runtime
   secret and is never written to the repository.
@@ -130,6 +158,7 @@ API key.
 |---|---|
 | Backend A (Routine) | Uses your Claude subscription quota (pick a light model) |
 | Backend B (LLM API) | Roughly a few cents/day, depending on model & volume |
+| Backend C (Spark) | Uses your Google AI Ultra subscription quota; no extra cost |
 | GitHub Actions | Free on public repos; private repos use the monthly free minutes (this job takes a few minutes/day) |
 | YouTube Data API (optional) | Usually no direct charge, but subject to the Google Cloud project's daily quota |
 
@@ -137,8 +166,11 @@ API key.
 
 Backend A: delete or pause the routine at claude.ai/code/routines.
 Backend B: repo Actions → "Daily digest (cron)" → ⋯ → Disable workflow.
+Backend C: delete or pause the scheduled task in the Gemini app's Agent tab.
 Full uninstall: also revoke the mail app password / auth code and YouTube API
-key, delete the repo Secrets, and (optionally) delete the repo.
+key, delete the repo Secrets, and (optionally) delete the repo. For Backend C,
+delete the ledger spreadsheet and revoke the task's Gmail / Sheets / Drive
+access.
 
 ### No coding agent? Manual install
 
@@ -160,6 +192,7 @@ PC の電源が切れていても配信されます。
 
 - Claude Code：`このオートメーションをインストールして https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 - Codex：`Install this automation: https://github.com/utopiabelmont/arxiv-daily-digest-kit`
+- Gemini Spark：`このオートメーションをインストールして https://github.com/utopiabelmont/arxiv-daily-digest-kit`
 
 エージェントは `INSTALL.md` を読み、まず 3 つの事前チェック（送信メールの
 2 段階認証 / gh の正しいアカウントへのログイン / Claude 経路の場合は
@@ -172,16 +205,25 @@ YouTube 研究動画の要否、リポジトリ名と公開設定、件名、モ
 リンクで開くアシスタント——に答えるだけで、設定は自動で完了します。
 デフォルトがある質問には「デフォルトで」と答えられます。
 
-**2 つの実行バックエンド**（ウィザードが一緒に選びます）：
+シェルを持たないアシスタント（Gemini Spark など）は代わりに
+`INSTALL-SPARK.md` を読み、質問は 7 つだけです。
+
+**3 つの実行バックエンド**（ウィザードが一緒に選びます）：
 
 - **A · Claude クラウド Routine** — Claude Pro/Max が必要。
 - **B · GitHub Actions cron** — Codex ユーザーはこちらが既定。LLM API キー
   （OpenAI または Anthropic）が必要で、全処理が GitHub 上で完結します。
+- **C · Gemini Spark ネイティブ** — Google AI Ultra が必要。GitHub アカウント、
+  メールのアプリパスワード、API キーはいずれも不要です。重複判定は Google
+  Sheets の台帳、送信は標準の Gmail を使います。代わりに、検索と重複判定の
+  精度は A/B より低く（スクリプトではなくモデルが実行）、YouTube 研究動画には
+  対応しません。詳細は `INSTALL-SPARK.md`。
 
 前提条件：GitHub アカウント + git、SMTP 送信可能なメールアカウント
 （アプリパスワード / 授権コードの取得手順はプロバイダ別にウィザードが案内します）。
 YouTube を有効にする場合は、Google Cloud の YouTube Data API v3 と制限付き
-API キーも必要です。
+API キーも必要です。**バックエンド C ではこれらは一切不要**で、Spark が使える
+Google AI Ultra アカウントだけがあれば動きます。
 
 ### プライバシーとデータの流れ
 
@@ -192,6 +234,9 @@ API キーも必要です。
 - バックエンド B は論文タイトル/アブストラクトと分野説明を**あなたが選んだ**
   LLM プロバイダへ送信します。バックエンド A はあなたの Claude アカウント内で
   処理されます。
+- バックエンド C はすべてあなたの Google アカウント内で完結します。台帳と
+  アーカイブは Google Sheets / Drive に保存され、ダイジェストは Ultra の利用枠で
+  生成され、Gmail から送信されます。第三者の資格情報は使いません。
 - YouTube を有効にすると、設定した検索語が Google の YouTube Data API に
   送信されます。`YOUTUBE_API_KEY` は保護された実行環境 Secret としてのみ使用し、
   リポジトリには書き込みません。
@@ -202,6 +247,7 @@ API キーも必要です。
 |---|---|
 | バックエンド A（Routine） | Claude サブスクリプションの利用枠を消費（軽量モデル推奨） |
 | バックエンド B（LLM API） | モデルと件数により、おおよそ 1 日数セント |
+| バックエンド C（Spark） | Google AI Ultra の利用枠を消費。追加費用なし |
 | GitHub Actions | 公開リポジトリは無料；非公開は毎月の無料枠内（本ジョブは 1 日数分） |
 | YouTube Data API（任意） | 通常は直接課金なし；Google Cloud プロジェクトの日次割当の対象 |
 
@@ -209,9 +255,13 @@ API キーも必要です。
 
 バックエンド A：claude.ai/code/routines で routine を削除または停止。
 バックエンド B：リポジトリの Actions → "Daily digest (cron)" → ⋯ →
-Disable workflow。完全に削除する場合は、アプリパスワード / 授権コードの
+Disable workflow。
+バックエンド C：Gemini アプリの Agent タブでスケジュールタスクを削除または停止。
+完全に削除する場合は、アプリパスワード / 授権コードの
 無効化、YouTube API キーの無効化、Secrets の削除、（任意で）
-リポジトリ自体の削除も行ってください。
+リポジトリ自体の削除も行ってください。バックエンド C では、台帳スプレッド
+シートの削除と、タスクに付与した Gmail / Sheets / Drive の権限の取り消しを
+行ってください。
 
 ### エージェントなしで使う（手動インストール）
 
@@ -229,6 +279,9 @@ fetch (arXiv API + Google News RSS + optional YouTube Data API) → LLM digest
 & cards → commit to your repo → GitHub Action emails body + HTML card
 attachment.
 Cross-day dedup · timezone-aware dating · multi-provider SMTP · zero pip deps.
+Backend C replaces the scripts with a scheduled Spark task: arXiv search →
+digest & inline cards → Gmail → Google Sheets ledger (dedup + archive), no repo
+and no SMTP.
 
 ### Credits & data sources / 致谢 / 謝辞
 
